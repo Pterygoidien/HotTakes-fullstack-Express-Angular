@@ -99,9 +99,61 @@ exports.deleteSauce = asyncHandler(async (req, res) => {
 });
 
 exports.addLike = asyncHandler(async (req, res) => {
-  const { id, like, sauceId } = req.params;
+  const { id } = req.params;
+  const { like, sauceId } = req.body;
+
+  const sauce = await Sauce.findById(id);
+  if (!sauce) {
+    req.status(400);
+    throw new Error("Sauce not found !");
+  }
+  if (!req.user) {
+    res.status(401);
+    throw new Error("Error with Auth");
+  }
+
+  const usersLiked = sauce.usersLiked;
+  const usersDisliked = sauce.usersDisliked;
+
+  function removeItemFromArray(item, array) {
+    if (array.includes(item)) {
+      const itemIndex = array.indexOf(item);
+      array.splice(itemIndex);
+    }
+  }
+  function addItemFromArray(item, array) {
+    if (!array.includes(item)) return array.push(item);
+  }
+
   switch (like) {
     case 1:
+      addItemFromArray(req.user._id, usersLiked);
+      break;
+    case 0:
+      if (usersLiked.includes(req.user._id)) {
+        const userId_indexOf = usersLiked.indexOf(req.user._id);
+        usersLiked.splice(userId_indexOf, 1);
+      } else if (usersDisliked.includes(req.user._id)) {
+        if (usersDisliked.includes(req.user._id)) {
+          const userId_indexOf = usersDisliked.indexOf(req.user._id);
+          usersDisliked.splice(userId_indexOf, 1);
+        }
+      }
+      break;
+    case -1:
+      addItemFromArray(req.user._id, usersDisliked);
       break;
   }
+  await Sauce.findByIdAndUpdate(
+    id,
+    {
+      ...sauce,
+      usersLiked,
+      usersDisliked,
+      likes: usersLiked.length,
+      dislikes: usersDisliked.length,
+    },
+    { new: true }
+  );
+  res.status(200).send("like ajouté");
 });

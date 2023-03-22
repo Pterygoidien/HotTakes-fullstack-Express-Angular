@@ -1,5 +1,6 @@
 const express = require("express");
 const path = require("path");
+const cors = require("cors");
 const mongoDB = require("./config/mongoDB");
 
 const { errorHandler } = require("./middleware/errorMiddleware");
@@ -10,6 +11,7 @@ mongoDB();
 const app = express();
 
 //allow Cross-Origin Ressource Sharing
+app.use(cors());
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(

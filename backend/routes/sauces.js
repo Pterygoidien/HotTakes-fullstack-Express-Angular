@@ -17,4 +17,6 @@ router
   .put(authGuard, upload.single("image"), sauceController.updateSauce)
   .delete(authGuard, sauceController.deleteSauce);
 
+router.post("/:id/like", authGuard, sauceController.addLike);
+
 module.exports = router;
