@@ -1,3 +1,4 @@
+const { json } = require("express");
 const asyncHandler = require("express-async-handler");
 
 const Sauce = require("../models/sauceModel");
@@ -23,7 +24,9 @@ exports.getSauces = asyncHandler(async (req, res) => {
  */
 exports.getSingleSauce = asyncHandler(async (req, res) => {
   const sauce = await Sauce.findOne({ _id: req.params.id });
-  res.status(200).json(sauce);
+  res.status(200).json({
+    sauce,
+  });
 });
 
 /**
@@ -40,7 +43,7 @@ exports.addSauce = asyncHandler(async (req, res) => {
     }`,
   });
 
-  res.status(201).send("Sauce ajoutée !");
+  res.status(201).json(sauce);
 });
 
 /**
@@ -54,16 +57,18 @@ exports.updateSauce = asyncHandler(async (req, res) => {
 
   if (!sauce) {
     req.status(400);
-    throw new Error("Sauce not found !");
+    throw new Error(
+      "Cette sauce n'a pas été trouvée dans notre base de donnée. "
+    );
   }
   if (!req.user) {
     res.status(401);
-    throw new Error("Error with Auth");
+    throw new Error("Vous n'êtes pas autorisé à modifier cette sauce.");
   }
 
   if (sauce.userId.toString() !== req.user._id.toString()) {
     res.status(401);
-    throw new Error("User not authorized");
+    throw new Error("Vous n'est pas autorisé à modifier cette sauce.");
   }
   await Sauce.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
@@ -105,11 +110,11 @@ exports.addLike = asyncHandler(async (req, res) => {
   const sauce = await Sauce.findById(id);
   if (!sauce) {
     req.status(400);
-    throw new Error("Sauce not found !");
+    throw new Error("Sauce non trouvée");
   }
   if (!req.user) {
     res.status(401);
-    throw new Error("Error with Auth");
+    throw new Error("Problème avec l'authentification");
   }
 
   const usersLiked = sauce.usersLiked;
@@ -131,29 +136,26 @@ exports.addLike = asyncHandler(async (req, res) => {
       break;
     case 0:
       if (usersLiked.includes(req.user._id)) {
-        const userId_indexOf = usersLiked.indexOf(req.user._id);
-        usersLiked.splice(userId_indexOf, 1);
+        removeItemFromArray(req.user._id, usersLiked);
       } else if (usersDisliked.includes(req.user._id)) {
-        if (usersDisliked.includes(req.user._id)) {
-          const userId_indexOf = usersDisliked.indexOf(req.user._id);
-          usersDisliked.splice(userId_indexOf, 1);
-        }
+        removeItemFromArray(req.user._id, usersDisliked);
       }
       break;
     case -1:
       addItemFromArray(req.user._id, usersDisliked);
       break;
   }
-  await Sauce.findByIdAndUpdate(
-    id,
-    {
-      ...sauce,
-      usersLiked,
-      usersDisliked,
-      likes: usersLiked.length,
-      dislikes: usersDisliked.length,
-    },
-    { new: true }
-  );
-  res.status(200).send("like ajouté");
+  const likes = usersLiked.length;
+  const dislikes = usersDisliked.length;
+
+  const sauceUpdate = {
+    ...sauce,
+    usersLiked,
+    usersDisliked,
+    likes,
+    dislikes,
+  };
+
+  await Sauce.findByIdAndUpdate(id, { sauceUpdate }, { new: true });
+  res.status(200).json({ message: "Like updaté !", sauce });
 });

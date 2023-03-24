@@ -22,11 +22,11 @@ exports.authGuard = asyncHandler(async (req, res, next) => {
     } catch (error) {
       console.error(error);
       res.status(401);
-      throw new Error("Unauthorized");
+      throw new Error("Non autorisé, token invalide");
     }
   }
   if (!token) {
     res.status(401);
-    throw new Error("Unauthorized without a token");
+    throw new Error("Non autorisé, pas de token");
   }
 });

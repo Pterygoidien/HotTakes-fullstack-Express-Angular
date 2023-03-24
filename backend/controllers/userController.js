@@ -12,14 +12,14 @@ const signUp = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     res.status(400);
-    throw new Error("INVALID_FIELDS");
+    throw new Error("Les champs email et mot de passe sont obligatoires");
   }
 
   //Vérifier si l'utilisateur existe
   const isAlreadyRegistered = await User.findOne({ email });
   if (isAlreadyRegistered) {
     res.status(401);
-    throw new Error("USER_ALREADY_EXISTS");
+    throw new Error("L'utilisateur existe déjà");
   }
 
   //Hash password
@@ -30,10 +30,14 @@ const signUp = asyncHandler(async (req, res) => {
   const user = await User.create({ email, password: hashedPassword });
 
   if (user) {
-    res.status(201).send("ok");
+    res.status(201).json({
+      userId: user._id,
+      token: generateToken(user._id),
+      email: user.email,
+    });
   } else {
     res.status(400);
-    throw new Error("invalid user data");
+    throw new Error("Une erreur est survenue, veuillez réessayer");
   }
 });
 
@@ -53,7 +57,7 @@ const logIn = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(400);
-    throw new Error("Invalid credentials");
+    throw new Error("L'identifiant ou le mot de passe est incorrect");
   }
 });
 
